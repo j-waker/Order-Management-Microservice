@@ -68,7 +68,7 @@ public class ProductController {
     }
 
     @PutMapping("adjustPrice/{id}")
-    @Operation(summary = "Update an existing product's price", description = "Threadsafe update product price. This will invalidate the product cache.")
+    @Operation(summary = "Update an existing product's price", description = "Threadsafe adjustment to product price, positive or negative. This will invalidate the product cache.")
     public ResponseEntity<Product> updateProduct(
             @PathVariable Long id,
             @RequestBody BigDecimal priceAdjustment) {
