@@ -15,6 +15,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
+
 @RestController
 @RequestMapping("/api/products")
 public class ProductController {
@@ -63,5 +65,20 @@ public class ProductController {
             @PathVariable Long id,
             @RequestBody Product productDetails) {
         return ResponseEntity.ok(productService.updateProduct(id, productDetails));
+    }
+
+    @PutMapping("adjustPrice/{id}")
+    @Operation(summary = "Update an existing product's price", description = "Threadsafe update product price. This will invalidate the product cache.")
+    public ResponseEntity<Product> updateProduct(
+            @PathVariable Long id,
+            @RequestBody BigDecimal priceAdjustment) {
+        return ResponseEntity.ok(productService.adjustProductPrice(id, priceAdjustment));
+    }
+
+    @DeleteMapping("/{id}")
+    @Operation(summary = "Delete a product", description = "Removes a product from the catalog and clears the cache. Fails if the product is part of an existing order.")
+    public ResponseEntity<Void> deleteProduct(@PathVariable Long id) {
+        productService.deleteProduct(id);
+        return ResponseEntity.noContent().build();
     }
 }

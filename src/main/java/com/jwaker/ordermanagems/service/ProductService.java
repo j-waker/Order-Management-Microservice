@@ -6,12 +6,15 @@ import com.jwaker.ordermanagems.exception.ResourceNotFoundException;
 
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.math.BigDecimal;
 
 @Service
 @Slf4j
@@ -45,7 +48,7 @@ public class ProductService {
     }
 
     @Transactional
-    @CacheEvict(value = "products", allEntries = true) // Clear product list cache
+    @CacheEvict(value = "products", allEntries = true)
     public Product updateProduct(Long id, Product productDetails) {
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + id));
@@ -54,5 +57,29 @@ public class ProductService {
         product.setPrice(productDetails.getPrice());
 
         return productRepository.save(product);
+    }
+
+    @Transactional
+    @CacheEvict(value = "products", allEntries = true)
+    public Product adjustProductPrice(Long id, BigDecimal adjustment) {
+        if (!productRepository.existsById(id)) {
+            throw new ResourceNotFoundException("Product not found");
+        }
+
+        productRepository.incrementPrice(id, adjustment);
+        return getProductById(id);
+    }
+
+    @Transactional
+    @CacheEvict(value = "products", allEntries = true)
+    public void deleteProduct(Long id) {
+        Product product = productRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + id));
+
+        try {
+            productRepository.delete(product);
+        } catch (DataIntegrityViolationException e) {
+            throw new IllegalStateException("Cannot delete product as it is linked to existing orders.");
+        }
     }
 }

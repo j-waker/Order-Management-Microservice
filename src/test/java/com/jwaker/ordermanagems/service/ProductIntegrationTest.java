@@ -15,6 +15,8 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.math.BigDecimal;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -64,4 +66,18 @@ class ProductIntegrationTest {
         mockMvc.perform(get("/api/products/" + p.getId())).andExpect(status().isOk());
     }
 
+    @Test
+    @WithMockUser(username = "admin")
+    void testDeleteProduct_RemovesFromCacheAndDb() throws Exception {
+        Product p = productRepository.save(new Product("Temporary", new BigDecimal("10.00")));
+        Long id = p.getId();
+
+        mockMvc.perform(delete("/api/products/" + id))
+                .andExpect(status().isNoContent());
+
+        assertFalse(productRepository.existsById(id));
+
+        mockMvc.perform(get("/api/products"))
+                .andExpect(jsonPath("$.content[?(@.id == " + id + ")]").doesNotExist());
+    }
 }
