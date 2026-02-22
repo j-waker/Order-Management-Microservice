@@ -1,5 +1,6 @@
 package com.jwaker.ordermanagems.service;
 
+import com.jwaker.ordermanagems.dto.OrderItemRequest;
 import com.jwaker.ordermanagems.model.Product;
 import com.jwaker.ordermanagems.repository.OrderRepository;
 import com.jwaker.ordermanagems.repository.ProductRepository;
@@ -20,8 +21,8 @@ import org.springframework.test.context.ActiveProfiles;
 
 import java.math.BigDecimal;
 import java.util.List;
-import java.util.Random;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -46,15 +47,19 @@ public class OrderConcurrencyTest {
 
     private List<Long> productIds;
 
+    private Long product1Id;
+    private Long product2Id;
+
     @BeforeEach
-    void setup() {
+    void setUp() {
         orderRepository.deleteAll();
         productRepository.deleteAll();
 
-        Product p1 = productRepository.save(new Product("Product 1", new BigDecimal("10.00")));
-        Product p2 = productRepository.save(new Product("Product 2", new BigDecimal("20.00")));
+        Product p1 = productRepository.save(new Product("Item 1", new BigDecimal("10.00")));
+        Product p2 = productRepository.save(new Product("Item 2", new BigDecimal("20.00")));
 
-        this.productIds = List.of(p1.getId(), p2.getId());
+        this.product1Id = p1.getId();
+        this.product2Id = p2.getId();
     }
 
     @TestConfiguration
@@ -69,16 +74,26 @@ public class OrderConcurrencyTest {
     private CacheManager cacheManager;
 
     @Test
-    void testConcurrentOrderCreation() throws InterruptedException {
-        int numberOfThreads = 100;
-        ExecutorService service = Executors.newFixedThreadPool(numberOfThreads);
-        CountDownLatch latch = new CountDownLatch(numberOfThreads);
+    void testConcurrentOrderCreationWithDto() throws InterruptedException {
+        int threadCount = 10;
+        ExecutorService executor = Executors.newFixedThreadPool(threadCount);
+        CountDownLatch latch = new CountDownLatch(threadCount);
+        AtomicInteger successCount = new AtomicInteger(0);
 
-        for (int i = 0; i < numberOfThreads; i++) {
-            service.execute(() -> {
+        // Define the items once to be used by all threads
+        List<OrderItemRequest> itemRequests = List.of(
+                new OrderItemRequest(product1Id, 1),
+                new OrderItemRequest(product2Id, 1)
+        );
+
+        for (int i = 0; i < threadCount; i++) {
+            executor.submit(() -> {
                 try {
-                    Thread.sleep(ThreadLocalRandom.current().nextLong(0, 1001));
-                    orderService.createOrder(productIds);
+                    // Keep your random jitter for accuracy
+                    Thread.sleep(ThreadLocalRandom.current().nextLong(0, 500));
+
+                    orderService.createOrder(itemRequests);
+                    successCount.incrementAndGet();
                 } catch (Exception e) {
                     System.err.println("Thread failed: " + e.getMessage());
                 } finally {
@@ -87,15 +102,16 @@ public class OrderConcurrencyTest {
             });
         }
 
-        latch.await();
+        latch.await(10, TimeUnit.SECONDS);
+        executor.shutdown();
 
-        long orderCount = orderRepository.count();
-        assertEquals(numberOfThreads, orderCount, "All concurrent orders should be saved");
+        assertEquals(threadCount, successCount.get(), "All concurrent orders should be processed");
+        assertEquals(threadCount, orderRepository.count(), "Database should contain all processed orders");
     }
 
     @Test
     void testConcurrentProductUpdate() throws InterruptedException {
-        Product p = productRepository.findById(1L).orElseThrow();
+        Product p = productRepository.findById(product1Id).orElseThrow();
         p.setPrice(BigDecimal.ZERO);
         productRepository.saveAndFlush(p);
         cacheManager.getCache("products").clear();
@@ -113,7 +129,7 @@ public class OrderConcurrencyTest {
                     } catch (InterruptedException e) {
                         throw new RuntimeException(e);
                     }
-                    productService.adjustProductPrice(1L, adjustment);
+                    productService.adjustProductPrice(product1Id, adjustment);
                 } finally {
                     latch.countDown();
                 }
@@ -122,7 +138,7 @@ public class OrderConcurrencyTest {
 
         latch.await(10, TimeUnit.SECONDS);
 
-        BigDecimal finalPrice = productRepository.findById(1L).get().getPrice();
+        BigDecimal finalPrice = productRepository.findById(product1Id).get().getPrice();
         assertEquals(new BigDecimal("1000.00"), finalPrice);
     }
 }

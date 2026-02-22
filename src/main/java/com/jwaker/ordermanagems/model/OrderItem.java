@@ -27,6 +27,7 @@ public class OrderItem {
 
     @ManyToOne(fetch = FetchType.EAGER) // Ensure product is loaded
     @JoinColumn(name = "product_id")
+    @JsonIgnore
     private Product product;
 
     private Long quantity;
@@ -41,6 +42,27 @@ public class OrderItem {
         this.order = order;
     }
 
+    public Order getOrder() {
+        return order;
+    }
+    public void setOrder(Order order) {
+        this.order = order;
+    }
+
+    public Product getProduct() {
+        return product;
+    }
+    public void setProduct(Product product) {
+        this.product = product;
+    }
+
+    public Long getQuantity() {
+        return quantity;
+    }
+    public void setQuantity(Long quantity) {
+        this.quantity = quantity;
+    }
+
     public Long getProductId() {
         return product != null ? product.getId() : null;
     }
@@ -53,7 +75,4 @@ public class OrderItem {
         return product != null ? product.getPrice() : null;
     }
 
-    public Long getQuantity() {
-        return quantity;
-    }
 }

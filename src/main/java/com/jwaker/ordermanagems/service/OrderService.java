@@ -1,5 +1,6 @@
 package com.jwaker.ordermanagems.service;
 
+import com.jwaker.ordermanagems.dto.OrderItemRequest;
 import com.jwaker.ordermanagems.exception.ResourceNotFoundException;
 import com.jwaker.ordermanagems.model.Order;
 import com.jwaker.ordermanagems.model.OrderItem;
@@ -34,31 +35,20 @@ public class OrderService {
     }
 
     @Transactional
-    @CacheEvict(value = "orders_list", allEntries = true)
-    public Order createOrder(List<Long> productIds) {
-        Map<Long, Long> quantityMap = productIds.stream()
-                .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
-
-        List<Product> products = productRepository.findAllById(quantityMap.keySet());
-
-        if (products.size() != quantityMap.keySet().size()) {
-            throw new ResourceNotFoundException("One or more product IDs are invalid.");
-        }
-
+    public Order createOrder(List<OrderItemRequest> itemRequests) {
         Order order = new Order();
         order.setId(UUID.randomUUID());
 
-        BigDecimal total = BigDecimal.ZERO;
-        for (Product product : products) {
-            Long quantity = quantityMap.get(product.getId());
+        List<OrderItem> items = itemRequests.stream().map(req -> {
+            Product product = productRepository.findById(req.id())
+                    .orElseThrow(() -> new ResourceNotFoundException("Product not found: " + req.id()));
 
-            OrderItem item = new OrderItem(product, quantity, order);
-            order.getItems().add(item);
+            return new OrderItem(product, req.quantity().longValue(), order);
+        }).collect(Collectors.toList());
 
-            total = total.add(product.getPrice().multiply(BigDecimal.valueOf(quantity)));
-        }
+        order.setItems(items);
+        order.calculateTotalPrice();
 
-        order.setTotalPrice(total);
         return orderRepository.save(order);
     }
 

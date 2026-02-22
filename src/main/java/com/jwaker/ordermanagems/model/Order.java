@@ -50,6 +50,13 @@ public class Order {
         this.id = id;
     }
 
+    public List<OrderItem> getItems() {
+        return items;
+    }
+    public void setItems(List<OrderItem> items) {
+        this.items = items;
+    }
+
     public BigDecimal getTotalPrice() {
         return totalPrice;
     }
@@ -57,7 +64,9 @@ public class Order {
         this.totalPrice = totalPrice;
     }
 
-    public List<OrderItem> getItems() {
-        return items;
+    public void calculateTotalPrice() {
+        this.totalPrice = items.stream()
+                .map(item -> item.getProduct().getPrice().multiply(BigDecimal.valueOf(item.getQuantity())))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 }

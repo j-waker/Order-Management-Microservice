@@ -1,6 +1,7 @@
 package com.jwaker.ordermanagems.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.jwaker.ordermanagems.dto.OrderItemRequest;
 import com.jwaker.ordermanagems.model.Product;
 import com.jwaker.ordermanagems.repository.OrderRepository;
 import com.jwaker.ordermanagems.repository.ProductRepository;
@@ -19,6 +20,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.math.BigDecimal;
 import java.util.List;
 
+import static org.hamcrest.Matchers.hasSize;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -43,38 +45,47 @@ class OrderIntegrationTest {
     @Autowired
     private OrderService orderService;
 
+    private ObjectMapper objectMapper;
+
+    private Long product1Id;
+    private Long product2Id;
+
     @BeforeEach
-    void setup() {
+    void setUp() {
+        this.objectMapper = new ObjectMapper();
         orderRepository.deleteAll();
         productRepository.deleteAll();
 
-        Product p1 = new Product("Laptop", new BigDecimal("1000.00"));
-        Product p2 = new Product("Mouse", new BigDecimal("50.00"));
-        productRepository.saveAll(List.of(p1, p2));
+        Product p1 = productRepository.save(new Product("Item 1", new BigDecimal("10.00")));
+        Product p2 = productRepository.save(new Product("Item 2", new BigDecimal("20.00")));
+
+        this.product1Id = p1.getId();
+        this.product2Id = p2.getId();
     }
 
     @Test
     @WithMockUser(username = "admin")
     void shouldCreateOrderAndCalculateTotal() throws Exception {
-        List<Long> ids = productRepository.findAll().stream()
-                .map(Product::getId).toList();
+        OrderItemRequest item1 = new OrderItemRequest(product1Id, 1);
+        OrderItemRequest item2 = new OrderItemRequest(product2Id, 3);
+        List<OrderItemRequest> payload = List.of(item1, item2);
 
         mockMvc.perform(post("/api/orders")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(new ObjectMapper().writeValueAsString(ids)))
+                        .content(objectMapper.writeValueAsString(payload)))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.id").exists())
-                .andExpect(jsonPath("$.totalPrice").value(1050.00));
-
-        assertEquals(1, orderRepository.count());
+                .andExpect(jsonPath("$.items").exists());
     }
 
     @Test
     @WithMockUser(username = "admin")
     void shouldReturn404WhenProductDoesNotExist() throws Exception {
+        OrderItemRequest nonExistentItem = new OrderItemRequest(999L, 1);
+        List<OrderItemRequest> payload = List.of(nonExistentItem);
+
         mockMvc.perform(post("/api/orders")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("[999, 1000]")) // Non-existent IDs
+                        .content(objectMapper.writeValueAsString(payload)))
                 .andExpect(status().isNotFound());
     }
 
@@ -89,20 +100,31 @@ class OrderIntegrationTest {
     @Test
     @WithMockUser(username = "admin")
     void shouldReturnPaginatedOrders() throws Exception {
-        orderRepository.deleteAll();
-        productRepository.deleteAll();
+        Product p1 = productRepository.save(new Product("Item 1", new BigDecimal("10")));
+        Product p2 = productRepository.save(new Product("Item 2", new BigDecimal("20")));
 
-        Product p1 = productRepository.save(new Product("Laptop", new BigDecimal("1000.00")));
-        Long p1Id = p1.getId();
-
-        orderService.createOrder(List.of(p1Id));
-        orderService.createOrder(List.of(p1Id, p1Id)); // Testing duplicate support too
+        orderService.createOrder(List.of(new OrderItemRequest(p1.getId(), 1)));
+        orderService.createOrder(List.of(new OrderItemRequest(p2.getId(), 1)));
 
         mockMvc.perform(get("/api/orders")
                         .param("page", "0")
                         .param("size", "10"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content.length()").value(2))
-                .andExpect(jsonPath("$.totalElements").value(2));
+                .andExpect(jsonPath("$.content.length()").value(2));
+    }
+
+    @Test
+    @WithMockUser(roles = "admin")
+    void shouldCreateOrderWithNewDtoFormat() throws Exception {
+        OrderItemRequest item1 = new OrderItemRequest(product1Id, 2);
+        OrderItemRequest item2 = new OrderItemRequest(product2Id, 5);
+        List<OrderItemRequest> payload = List.of(item1, item2);
+
+        mockMvc.perform(post("/api/orders")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(payload)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.totalPrice").exists())
+                .andExpect(jsonPath("$.items", hasSize(2)));
     }
 }

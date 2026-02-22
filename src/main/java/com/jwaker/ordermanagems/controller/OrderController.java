@@ -1,5 +1,6 @@
 package com.jwaker.ordermanagems.controller;
 
+import com.jwaker.ordermanagems.dto.OrderItemRequest;
 import com.jwaker.ordermanagems.model.Order;
 import com.jwaker.ordermanagems.service.OrderService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -46,18 +47,8 @@ public class OrderController {
     }
 
     @PostMapping
-    @Operation(summary = "Create a new order", description = "Pass a list of product IDs. Duplicates are allowed to increase quantity.")
-    @io.swagger.v3.oas.annotations.parameters.RequestBody(
-            content = @Content(
-                    mediaType = "application/json",
-                    examples = @ExampleObject(
-                            value = "[1, 1, 2, 3]",
-                            summary = "Example with duplicate IDs",
-                            description = "This example creates an order with two of Product 1, one of Product 2, and one of Product 3."
-                    )
-            )
-    )
-    public ResponseEntity<Order> createOrder(@RequestBody List<Long> productIds) {
-        return new ResponseEntity<>(orderService.createOrder(productIds), HttpStatus.CREATED);
+    @Operation(summary = "Create an order", description = "Submit a list of product IDs and quantities.")
+    public ResponseEntity<Order> createOrder(@RequestBody List<OrderItemRequest> itemRequests) {
+        return new ResponseEntity<>(orderService.createOrder(itemRequests), HttpStatus.CREATED);
     }
 }
