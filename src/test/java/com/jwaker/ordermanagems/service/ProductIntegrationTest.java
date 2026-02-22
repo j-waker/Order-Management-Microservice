@@ -63,4 +63,5 @@ class ProductIntegrationTest {
 
         mockMvc.perform(get("/api/products/" + p.getId())).andExpect(status().isOk());
     }
+
 }

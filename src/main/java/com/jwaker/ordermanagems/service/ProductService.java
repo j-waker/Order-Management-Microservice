@@ -11,6 +11,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @Slf4j
@@ -38,7 +39,20 @@ public class ProductService {
 
     @CacheEvict(value = "products", allEntries = true)
     public Product saveProduct(Product product) {
+        product.setId(null);
         log.info("Adding new product: {}", product.getName());
+        return productRepository.save(product);
+    }
+
+    @Transactional
+    @CacheEvict(value = "products", allEntries = true) // Clear product list cache
+    public Product updateProduct(Long id, Product productDetails) {
+        Product product = productRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + id));
+
+        product.setName(productDetails.getName());
+        product.setPrice(productDetails.getPrice());
+
         return productRepository.save(product);
     }
 }

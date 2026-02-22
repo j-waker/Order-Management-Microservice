@@ -76,4 +76,22 @@ class ProductServiceTest {
         assertEquals("Mouse", result.getContent().get(0).getName());
         verify(productRepository, times(1)).findAll(pageable);
     }
+
+    @Test
+    void updateProduct_ShouldInvalidateCache() {
+        Long productId = 1L;
+        Product existingProduct = new Product("Old Name", new BigDecimal("50.00"));
+        existingProduct.setId(productId);
+
+        Product updateDetails = new Product("New Name", new BigDecimal("99.99"));
+
+        when(productRepository.findById(productId)).thenReturn(Optional.of(existingProduct));
+        when(productRepository.save(any(Product.class))).thenReturn(existingProduct);
+
+        productService.updateProduct(productId, updateDetails);
+
+        verify(productRepository, times(1)).findById(productId);
+        verify(productRepository, times(1)).save(existingProduct);
+        assertEquals("New Name", existingProduct.getName());
+    }
 }

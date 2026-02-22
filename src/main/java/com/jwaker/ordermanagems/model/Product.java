@@ -1,5 +1,6 @@
 package com.jwaker.ordermanagems.model;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -15,6 +16,7 @@ public class Product {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @jakarta.persistence.Id
+    @Schema(accessMode = Schema.AccessMode.READ_ONLY, description = "The unique ID of the product")
     private Long id;
     private String name;
     private BigDecimal price;
