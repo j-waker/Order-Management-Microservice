@@ -19,6 +19,7 @@ A Spring Boot microservice for managing a product catalog and processing orders 
 
         Swagger UI: http://localhost:8080/swagger-ui/index.html
 
+---
 
 **How to Run Tests**
 
@@ -27,7 +28,9 @@ A Spring Boot microservice for managing a product catalog and processing orders 
   Concurrency Specific: mvn test -Dtest=OrderConcurrencyTest
 
   Note: The test suite uses an in-memory H2 database and does not require external setup.
-    
+
+
+---
 
 **Assumptions & Design Notes**
 
