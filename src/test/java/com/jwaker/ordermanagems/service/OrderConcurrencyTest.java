@@ -5,6 +5,7 @@ import com.jwaker.ordermanagems.repository.OrderRepository;
 import com.jwaker.ordermanagems.repository.ProductRepository;
 
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
+@Tag("integration")
 public class OrderConcurrencyTest {
 
     @Autowired

@@ -1,6 +1,7 @@
 package com.jwaker.ordermanagems.service;
 
 import com.jwaker.ordermanagems.model.Order;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import java.util.UUID;
 
@@ -16,6 +17,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @SpringBootTest
 @ActiveProfiles("test")
+@Tag("unit")
 class OrderCacheTest {
 
     @TestConfiguration

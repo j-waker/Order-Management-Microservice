@@ -3,6 +3,7 @@ package com.jwaker.ordermanagems.service;
 import com.jwaker.ordermanagems.model.Product;
 import com.jwaker.ordermanagems.repository.ProductRepository;
 
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -28,6 +29,7 @@ import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 @ActiveProfiles("test")
+@Tag("unit")
 class ProductServiceTest {
 
     @Mock
