@@ -7,11 +7,11 @@ A Spring Boot microservice for managing a product catalog and processing orders 
 
 **How to Run the Service**
 
-  Prerequisites: Java 21 and Maven installed.
-  
-  Build: Run $mvn clean install.
-  
-  Run: Run $mvn spring-boot:run.
+  Prerequisites: Java 21 installed.
+
+  Build: Run ./mvnw clean install
+
+  Run: Run ./mvnw spring-boot:run
 
   Access:
 
@@ -23,9 +23,11 @@ A Spring Boot microservice for managing a product catalog and processing orders 
 
 **How to Run Tests**
 
-  All Tests: mvn test
+  All Tests: ./mvnw test
 
-  Concurrency Specific: mvn test -Dtest=OrderConcurrencyTest
+  Unit Tests: ./mvnw test -Dgroups="unit"
+
+  Integration Tests: ./mvnw test -Dgroups="integration"
 
   Note: The test suite uses an in-memory H2 database and does not require external setup.
 
