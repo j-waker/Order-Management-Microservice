@@ -2,6 +2,8 @@
 
 A Spring Boot microservice for managing a product catalog and processing orders with integrated caching and data pagination.
 
+---
+
 
 **How to Run the Service**
 
